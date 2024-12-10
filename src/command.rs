@@ -1,4 +1,3 @@
-use crate::error::Error;
 use crate::result::Result;
 use crate::{connection::Connection, frame::Frame};
 
@@ -16,6 +15,7 @@ impl Command {
         if let Frame::Array(frames) = frames {
             let mut frames = frames.into_iter();
             if let Some(frame) = frames.next() {
+                println!("Frames: {:?}", frame);
                 match frame {
                     Frame::Bulk(cmd) => {
                         let cmd = String::from_utf8(cmd.to_vec()).unwrap().to_uppercase();

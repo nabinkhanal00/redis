@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::Cursor;
 use std::string::FromUtf8Error;
 
-use bytes::{Buf, Bytes};
+use bytes::{Buf, Bytes, BytesMut};
 
 #[derive(Debug)]
 pub enum Error {
@@ -55,10 +55,13 @@ impl Frame {
                 Ok(Frame::Simple(string))
             }
             '$' => {
-                let _ = get_decimal(cursor)? as usize;
+                let n = get_decimal(cursor)? as usize;
                 let str = get_line(cursor)?;
-                let b = Bytes::copy_from_slice(str);
-                Ok(Frame::Bulk(b))
+                let mut b = BytesMut::new();
+                b.extend_from_slice(format!("${n}\r\n").as_bytes());
+                b.extend_from_slice(str);
+                b.extend_from_slice("\r\n".as_bytes());
+                Ok(Frame::Bulk(b.into()))
             }
             '*' => {
                 let count = get_decimal(cursor)?;

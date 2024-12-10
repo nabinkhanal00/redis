@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use bytes::{Buf, Bytes, BytesMut};
+use bytes::{Buf, BytesMut};
 use tokio::io::AsyncWriteExt;
 use tokio::{io::AsyncReadExt, net::TcpStream};
 
@@ -29,10 +29,7 @@ impl Connection {
                 self.stream.write(value.as_bytes()).await?;
             }
             Frame::Bulk(bytes) => {
-                let value = format!("${}\r\n", bytes.as_ref().len());
-                self.stream.write(value.as_bytes()).await?;
                 self.stream.write(&bytes[..]).await?;
-                self.stream.write("\r\n".as_bytes()).await?;
             }
 
             _ => {
