@@ -1,10 +1,10 @@
+use command::Command;
 use connection::Connection;
-use frame::Frame;
-use std::net::SocketAddr;
 use tokio::io::Error;
 use tokio::net::TcpListener;
 
 mod command;
+mod commands;
 mod connection;
 mod error;
 mod frame;
@@ -27,14 +27,8 @@ async fn handle_connection(mut con: Connection) {
         let frame = con.read_frame().await;
         if let Ok(frame) = frame {
             if let Some(frame) = frame {
-                match frame {
-                    Frame::Simple(val) => {
-                        if val.to_lowercase() == "ping" {
-                            let _ = con.write_frame(Frame::Simple("PONG".to_string())).await;
-                        }
-                    }
-                    _ => unimplemented!(),
-                }
+                let command = Command::new(frame).unwrap();
+                command.execute(&mut con).await;
             } else {
                 println!("Connection closed");
                 return;

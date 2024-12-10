@@ -2,7 +2,7 @@ use std::fmt;
 use std::string::FromUtf8Error;
 use std::{fmt::Display, io::Cursor};
 
-use bytes::{Buf, Bytes};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 #[derive(Debug)]
 pub enum Error {
@@ -26,6 +26,22 @@ impl Frame {
                 let _ = get_line(cursor)?;
                 Ok(())
             }
+            '*' => {
+                let count = get_decimal(cursor)?;
+                for _ in 0..count {
+                    let _ = Self::check(cursor)?;
+                }
+                Ok(())
+            }
+            '$' => {
+                let len = get_decimal(cursor)? as usize;
+                let str = get_line(cursor)?;
+                if str.len() != len {
+                    return Err("bulk string size not matching".into());
+                }
+                Ok(())
+            }
+
             _ => {
                 unimplemented!()
             }
@@ -37,6 +53,20 @@ impl Frame {
                 let line = get_line(cursor)?.to_vec();
                 let string = String::from_utf8(line)?;
                 Ok(Frame::Simple(string))
+            }
+            '$' => {
+                let str = get_line(cursor)?;
+                let b = Bytes::copy_from_slice(str);
+                Ok(Frame::Bulk(b))
+            }
+            '*' => {
+                let count = get_decimal(cursor)?;
+                let mut frames = Vec::new();
+                for _ in 0..count {
+                    let frame = Self::parse(cursor)?;
+                    frames.push(frame);
+                }
+                Ok(Frame::Array(frames))
             }
             _ => {
                 unimplemented!()
