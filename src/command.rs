@@ -1,4 +1,5 @@
 use crate::result::Result;
+use crate::DB;
 use crate::{connection::Connection, frame::Frame};
 
 use crate::commands::{EchoExecutor, GetExecutor, PingExecutor, SetExecutor};
@@ -15,15 +16,14 @@ impl Command {
         if let Frame::Array(frames) = frames {
             let mut frames = frames.into_iter();
             if let Some(frame) = frames.next() {
-                println!("Frames: {:?}", frame);
                 match frame {
                     Frame::Bulk(cmd) => {
-                        let cmd = String::from_utf8(cmd.to_vec()).unwrap().to_uppercase();
+                        let cmd = Frame::string_from_bulk(cmd).to_uppercase();
                         match cmd.as_str() {
                             "PING" => Ok(Command::PING(PingExecutor {})),
                             "GET" => {
                                 if let Some(key) = frames.next() {
-                                    if let Frame::Simple(key) = key {
+                                    if let Frame::Bulk(key) = key {
                                         return Ok(Command::GET(GetExecutor { key }));
                                     } else {
                                         return Err("invalid frame".into());
@@ -34,7 +34,7 @@ impl Command {
                             }
                             "SET" => {
                                 if let Some(key) = frames.next() {
-                                    if let Frame::Simple(key) = key {
+                                    if let Frame::Bulk(key) = key {
                                         if let Some(value) = frames.next() {
                                             return Ok(Command::SET(SetExecutor { key, value }));
                                         } else {
@@ -74,7 +74,7 @@ impl Command {
             Err("invalid frame".into())
         }
     }
-    pub async fn execute(&self, con: &mut Connection) {
+    pub async fn execute(&self, con: &mut Connection, db: DB) {
         match self {
             Self::PING(executor) => {
                 executor.execute(con).await;
@@ -82,8 +82,11 @@ impl Command {
             Self::ECHO(executor) => {
                 executor.execute(con).await;
             }
-            _ => {
-                unimplemented!()
+            Self::GET(executor) => {
+                executor.execute(con, db).await;
+            }
+            Self::SET(executor) => {
+                executor.execute(con, db).await;
             }
         }
     }

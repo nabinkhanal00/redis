@@ -13,10 +13,9 @@ pub enum Error {
 #[derive(Debug)]
 pub enum Frame {
     Simple(String),
-    Error(String),
-    Integer(i64),
     Bulk(Bytes),
     Array(Vec<Frame>),
+    Null,
 }
 
 impl Frame {
@@ -44,6 +43,31 @@ impl Frame {
 
             _ => {
                 unimplemented!()
+            }
+        }
+    }
+    pub fn encode(&self) -> Bytes {
+        match self {
+            Self::Simple(str) => {
+                let mut b = BytesMut::new();
+                let str = str.clone();
+                b.extend("+".as_bytes());
+                b.extend(str.as_bytes());
+                b.extend("\r\n".as_bytes());
+                return b.into();
+            }
+            Self::Bulk(b) => b.clone(),
+            Self::Array(frames) => {
+                let mut b = BytesMut::new();
+                b.extend(format!("*{}\r\n", frames.len()).as_bytes());
+                for frame in frames {
+                    b.extend(frame.encode());
+                }
+                return b.into();
+            }
+            Self::Null => {
+                let b = Bytes::from("$-1\r\n");
+                b
             }
         }
     }
@@ -76,6 +100,15 @@ impl Frame {
                 unimplemented!()
             }
         }
+    }
+
+    pub fn string_from_bulk(bulk: Bytes) -> String {
+        let bulk = bulk.to_vec();
+        let mut sp = bulk.split(|c| *c == '\r' as u8);
+        let _ = sp.next().unwrap();
+        let cmd = sp.next().unwrap();
+        let cmd = &cmd[1..];
+        String::from_utf8(cmd.to_vec()).unwrap()
     }
 }
 

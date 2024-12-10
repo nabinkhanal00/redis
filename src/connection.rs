@@ -23,19 +23,7 @@ impl Connection {
     }
 
     pub async fn write_frame(&mut self, frame: Frame) -> Result<()> {
-        match frame {
-            Frame::Simple(value) => {
-                let value = format!("+{}\r\n", value);
-                self.stream.write(value.as_bytes()).await?;
-            }
-            Frame::Bulk(bytes) => {
-                self.stream.write(&bytes[..]).await?;
-            }
-
-            _ => {
-                unimplemented!()
-            }
-        }
+        let _ = self.stream.write(frame.encode().chunk()).await;
         Ok(())
     }
 
