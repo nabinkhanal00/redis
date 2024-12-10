@@ -26,7 +26,9 @@ async fn handle_connection(mut con: Connection) {
     loop {
         let frame = con.read_frame().await;
         if let Ok(frame) = frame {
+            println!("Frame is: {:?}", frame);
             if let Some(frame) = frame {
+                println!("Frame is: {:?}", frame);
                 let command = Command::new(frame).unwrap();
                 command.execute(&mut con).await;
             } else {

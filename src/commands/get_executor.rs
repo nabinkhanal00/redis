@@ -1,1 +1,3 @@
-pub struct GetExecutor {}
+pub struct GetExecutor {
+    pub key: String,
+}

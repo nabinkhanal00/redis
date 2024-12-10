@@ -1,1 +1,3 @@
-pub struct EchoExecutor {}
+pub struct EchoExecutor {
+    pub value: String,
+}

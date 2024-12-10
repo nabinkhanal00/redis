@@ -1,8 +1,8 @@
 use std::fmt;
+use std::io::Cursor;
 use std::string::FromUtf8Error;
-use std::{fmt::Display, io::Cursor};
 
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{Buf, Bytes};
 
 #[derive(Debug)]
 pub enum Error {
@@ -62,10 +62,12 @@ impl Frame {
             '*' => {
                 let count = get_decimal(cursor)?;
                 let mut frames = Vec::new();
-                for _ in 0..count {
+                for i in 0..count {
                     let frame = Self::parse(cursor)?;
+                    println!("{i} {frame:?}");
                     frames.push(frame);
                 }
+                println!("FRAMES: {:?}", frames);
                 Ok(Frame::Array(frames))
             }
             _ => {
