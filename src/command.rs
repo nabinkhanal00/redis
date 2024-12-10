@@ -18,7 +18,7 @@ impl Command {
             if let Some(frame) = frames.next() {
                 match frame {
                     Frame::Bulk(cmd) => {
-                        let cmd = String::from_utf8(cmd.to_vec()).unwrap();
+                        let cmd = String::from_utf8(cmd.to_vec()).unwrap().to_uppercase();
                         match cmd.as_str() {
                             "PING" => Ok(Command::PING(PingExecutor {})),
                             "GET" => {
@@ -49,7 +49,7 @@ impl Command {
                             }
                             "ECHO" => {
                                 if let Some(value) = frames.next() {
-                                    if let Frame::Simple(value) = value {
+                                    if let Frame::Bulk(value) = value {
                                         return Ok(Command::ECHO(EchoExecutor { value }));
                                     } else {
                                         return Err("invalid frame".into());
@@ -77,6 +77,9 @@ impl Command {
     pub async fn execute(&self, con: &mut Connection) {
         match self {
             Self::PING(executor) => {
+                executor.execute(con).await;
+            }
+            Self::ECHO(executor) => {
                 executor.execute(con).await;
             }
             _ => {

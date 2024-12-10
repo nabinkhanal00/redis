@@ -63,7 +63,7 @@ impl Frame {
             '*' => {
                 let count = get_decimal(cursor)?;
                 let mut frames = Vec::new();
-                for i in 0..count {
+                for _ in 0..count {
                     let frame = Self::parse(cursor)?;
                     frames.push(frame);
                 }
