@@ -55,6 +55,7 @@ impl Frame {
                 Ok(Frame::Simple(string))
             }
             '$' => {
+                let _ = get_decimal(cursor)? as usize;
                 let str = get_line(cursor)?;
                 let b = Bytes::copy_from_slice(str);
                 Ok(Frame::Bulk(b))
@@ -64,10 +65,8 @@ impl Frame {
                 let mut frames = Vec::new();
                 for i in 0..count {
                     let frame = Self::parse(cursor)?;
-                    println!("{i} {frame:?}");
                     frames.push(frame);
                 }
-                println!("FRAMES: {:?}", frames);
                 Ok(Frame::Array(frames))
             }
             _ => {

@@ -13,15 +13,12 @@ pub enum Command {
 
 impl Command {
     pub fn new(frames: Frame) -> Result<Self> {
-        println!("Frames are {:?}", frames);
         if let Frame::Array(frames) = frames {
             let mut frames = frames.into_iter();
             if let Some(frame) = frames.next() {
-                println!("Frame is {:?}", frame);
                 match frame {
                     Frame::Bulk(cmd) => {
                         let cmd = String::from_utf8(cmd.to_vec()).unwrap();
-                        println!("Command is:{}", cmd);
                         match cmd.as_str() {
                             "PING" => Ok(Command::PING(PingExecutor {})),
                             "GET" => {

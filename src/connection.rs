@@ -25,7 +25,6 @@ impl Connection {
     pub async fn write_frame(&mut self, frame: Frame) -> Result<()> {
         match frame {
             Frame::Simple(value) => {
-                println!("WRITING");
                 let value = format!("+{}\r\n", value);
                 self.stream.write(value.as_bytes()).await?;
             }
@@ -42,7 +41,6 @@ impl Connection {
                 return Ok(Some(frame));
             }
             let len = self.stream.read_buf(&mut self.buffer).await?;
-            println!("Read {len} amount of data.");
             if 0 == len {
                 if self.buffer.is_empty() {
                     return Ok(None);
