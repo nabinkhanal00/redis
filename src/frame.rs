@@ -109,7 +109,7 @@ impl Frame {
         let cmd = &cmd[1..];
         String::from_utf8(cmd.to_vec()).unwrap()
     }
-    pub fn decimal_from_bulk(bulk: Bytes) -> Option<u64> {
+    pub fn decimal_from_bulk(bulk: Bytes) -> Option<i64> {
         use atoi::atoi;
         let bulk = bulk.to_vec();
         let mut sp = bulk.split(|c| *c == '\r' as u8);
@@ -117,7 +117,7 @@ impl Frame {
         let cmd = sp.next().unwrap();
         let cmd = &cmd[1..];
 
-        atoi::<u64>(cmd)
+        atoi::<i64>(cmd)
     }
 }
 

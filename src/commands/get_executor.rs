@@ -19,7 +19,7 @@ impl GetExecutor {
                     value = Some(v.value.clone())
                 } else {
                     let exp = v.expiry.unwrap();
-                    if exp < Instant::now() {
+                    if exp > Instant::now() {
                         value = Some(v.value.clone())
                     } else {
                         db.remove(&key);
