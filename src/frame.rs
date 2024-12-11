@@ -13,6 +13,7 @@ pub enum Error {
 #[derive(Debug)]
 pub enum Frame {
     Simple(String),
+    Error(String),
     Bulk(Bytes),
     Array(Vec<Frame>),
     Null,
@@ -65,10 +66,8 @@ impl Frame {
                 }
                 return b.into();
             }
-            Self::Null => {
-                let b = Bytes::from("$-1\r\n");
-                b
-            }
+            Self::Null => Bytes::from("$-1\r\n"),
+            Self::Error(value) => Bytes::from(format!("-{}\r\n", value)),
         }
     }
     pub fn parse(cursor: &mut Cursor<&[u8]>) -> Result<Frame, Error> {
@@ -109,6 +108,16 @@ impl Frame {
         let cmd = sp.next().unwrap();
         let cmd = &cmd[1..];
         String::from_utf8(cmd.to_vec()).unwrap()
+    }
+    pub fn decimal_from_bulk(bulk: Bytes) -> Option<u64> {
+        use atoi::atoi;
+        let bulk = bulk.to_vec();
+        let mut sp = bulk.split(|c| *c == '\r' as u8);
+        let _ = sp.next().unwrap();
+        let cmd = sp.next().unwrap();
+        let cmd = &cmd[1..];
+
+        atoi::<u64>(cmd)
     }
 }
 

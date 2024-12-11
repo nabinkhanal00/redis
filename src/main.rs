@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 use bytes::Bytes;
 
@@ -15,7 +16,11 @@ mod error;
 mod frame;
 mod result;
 
-type DB = Arc<Mutex<HashMap<String, Bytes>>>;
+struct DBElement {
+    value: Bytes,
+    expiry: Option<Instant>,
+}
+type DB = Arc<Mutex<HashMap<String, DBElement>>>;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {

@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use bytes::Bytes;
 
 use crate::{connection::Connection, frame::Frame, DB};
@@ -10,10 +12,20 @@ impl GetExecutor {
     pub async fn execute(&self, con: &mut Connection, db: DB) {
         let value: Option<Bytes>;
         {
-            let db = db.lock().unwrap();
+            let mut db = db.lock().unwrap();
             let key = Frame::string_from_bulk(self.key.clone());
             if let Some(v) = db.get(&key) {
-                value = Some(v.clone());
+                if v.expiry.is_none() {
+                    value = Some(v.value.clone())
+                } else {
+                    let exp = v.expiry.unwrap();
+                    if exp < Instant::now() {
+                        value = Some(v.value.clone())
+                    } else {
+                        db.remove(&key);
+                        value = None
+                    }
+                }
             } else {
                 value = None;
             }
