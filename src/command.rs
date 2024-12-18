@@ -1,8 +1,10 @@
 use crate::result::Result;
-use crate::DB;
 use crate::{connection::Connection, frame::Frame};
+use crate::{CONFIG, DB};
 
-use crate::commands::{EchoExecutor, ErrorExecutor, GetExecutor, PingExecutor, SetExecutor};
+use crate::commands::{
+    ConfigExecutor, EchoExecutor, ErrorExecutor, GetExecutor, PingExecutor, SetExecutor,
+};
 
 pub enum Command {
     PING(PingExecutor),
@@ -10,6 +12,7 @@ pub enum Command {
     GET(GetExecutor),
     SET(SetExecutor),
     ERROR(ErrorExecutor),
+    CONFIG(ConfigExecutor),
 }
 
 impl Command {
@@ -120,6 +123,38 @@ impl Command {
                                     return Err("get needs a value".into());
                                 }
                             }
+                            "CONFIG" => {
+                                let command = frames.next();
+                                if let None = command {
+                                    return Ok(Command::ERROR(ErrorExecutor {
+                                        value: "config needs a command".to_string(),
+                                    }));
+                                }
+                                let command = command.unwrap();
+                                if let Frame::Bulk(command) = command {
+                                    let key = frames.next();
+                                    if let None = key {
+                                        return Ok(Command::ERROR(ErrorExecutor {
+                                            value: "config needs a command".to_string(),
+                                        }));
+                                    }
+                                    let key = key.unwrap();
+                                    if let Frame::Bulk(key) = key {
+                                        return Ok(Command::CONFIG(ConfigExecutor {
+                                            command,
+                                            key,
+                                        }));
+                                    } else {
+                                        return Ok(Command::ERROR(ErrorExecutor {
+                                            value: "invalid frame".to_string(),
+                                        }));
+                                    }
+                                } else {
+                                    return Ok(Command::ERROR(ErrorExecutor {
+                                        value: "invalid frame".to_string(),
+                                    }));
+                                }
+                            }
                             _ => {
                                 return Err("invalid command".into());
                             }
@@ -136,7 +171,7 @@ impl Command {
             Err("invalid frame".into())
         }
     }
-    pub async fn execute(&self, con: &mut Connection, db: DB) {
+    pub async fn execute(&self, con: &mut Connection, db: DB, cfg: CONFIG) {
         match self {
             Self::PING(executor) => {
                 executor.execute(con).await;
@@ -151,6 +186,7 @@ impl Command {
                 executor.execute(con, db).await;
             }
             Self::ERROR(executor) => executor.execute(con).await,
+            Self::CONFIG(executor) => executor.execute(con, cfg).await,
         }
     }
 }
